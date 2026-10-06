@@ -3,6 +3,7 @@ package net.caffeinemc.mods.sodium.client.render.frapi.render;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexConsumerUtils;
+import net.caffeinemc.mods.sodium.client.render.immediate.model.ItemTextureCoordinates;
 import net.caffeinemc.mods.sodium.api.math.MatrixHelper;
 import net.caffeinemc.mods.sodium.api.util.ColorARGB;
 import net.caffeinemc.mods.sodium.api.util.NormI8;
@@ -16,16 +17,30 @@ import org.lwjgl.system.MemoryStack;
 
 public class QuadEncoder {
     public static void writeQuadVertices(MutableQuadViewImpl quad, VertexConsumer vertexConsumer, int overlay, Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal) {
+        writeQuadVertices(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal,
+                ItemTextureCoordinates.UNCHANGED);
+    }
+
+    public static void writeQuadVertices(MutableQuadViewImpl quad, VertexConsumer vertexConsumer, int overlay,
+                                         Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal,
+                                         ItemTextureCoordinates textureCoordinates) {
         VertexBufferWriter writer = VertexConsumerUtils.convertOrLog(vertexConsumer, EntityVertex.FORMAT);
 
         if (writer != null) {
-            writeQuadVertices(quad, writer, overlay, matPosition, trustedNormals, matNormal);
+            writeQuadVertices(quad, writer, overlay, matPosition, trustedNormals, matNormal, textureCoordinates);
         } else {
-            writeQuadVerticesSlow(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal);
+            writeQuadVerticesSlow(quad, vertexConsumer, overlay, matPosition, trustedNormals, matNormal, textureCoordinates);
         }
     }
 
     public static void writeQuadVertices(MutableQuadViewImpl quad, VertexBufferWriter writer, int overlay, Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal) {
+        writeQuadVertices(quad, writer, overlay, matPosition, trustedNormals, matNormal,
+                ItemTextureCoordinates.UNCHANGED);
+    }
+
+    private static void writeQuadVertices(MutableQuadViewImpl quad, VertexBufferWriter writer, int overlay,
+                                          Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal,
+                                          ItemTextureCoordinates textureCoordinates) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long buffer = stack.nmalloc(4 * EntityVertex.STRIDE);
             long ptr = buffer;
@@ -56,7 +71,8 @@ public class QuadEncoder {
                     normal = MatrixHelper.transformNormal(matNormal, trustedNormals, quad.packedNormal(i));
                 }
 
-                EntityVertex.write(ptr, xt, yt, zt, ColorARGB.toABGR(quad.color(i)), quad.u(i), quad.v(i), overlay, quad.lightmap(i), normal);
+                EntityVertex.write(ptr, xt, yt, zt, ColorARGB.toABGR(quad.color(i)),
+                        textureCoordinates.u(quad.u(i)), textureCoordinates.v(quad.v(i)), overlay, quad.lightmap(i), normal);
                 ptr += EntityVertex.STRIDE;
             }
 
@@ -64,7 +80,9 @@ public class QuadEncoder {
         }
     }
 
-    private static void writeQuadVerticesSlow(MutableQuadViewImpl quad, VertexConsumer vertexConsumer, int overlay, Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal) {
+    private static void writeQuadVerticesSlow(MutableQuadViewImpl quad, VertexConsumer vertexConsumer, int overlay,
+                                              Matrix4f matPosition, boolean trustedNormals, Matrix3f matNormal,
+                                              ItemTextureCoordinates textureCoordinates) {
         final boolean useNormals = quad.hasVertexNormals();
 
         // The transformed normal vector
@@ -109,7 +127,7 @@ public class QuadEncoder {
             vertexConsumer.addVertex(xt, yt, zt);
 
             vertexConsumer.setColor(quad.color(i));
-            vertexConsumer.setUv(quad.u(i), quad.v(i));
+            vertexConsumer.setUv(textureCoordinates.u(quad.u(i)), textureCoordinates.v(quad.v(i)));
             vertexConsumer.setOverlay(overlay);
             vertexConsumer.setLight(quad.lightmap(i));
 
