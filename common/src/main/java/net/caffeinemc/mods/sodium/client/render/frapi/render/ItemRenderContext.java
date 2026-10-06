@@ -25,6 +25,7 @@ import net.caffeinemc.mods.sodium.client.render.frapi.helper.ColorHelper;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.EncodingFormat;
 import net.caffeinemc.mods.sodium.client.render.frapi.mesh.MutableQuadViewImpl;
 import net.caffeinemc.mods.sodium.client.render.texture.SpriteFinderCache;
+import net.caffeinemc.mods.sodium.client.render.immediate.model.ItemTextureCoordinates;
 import net.caffeinemc.mods.sodium.mixin.features.render.frapi.ItemRendererAccessor;
 import net.fabricmc.fabric.api.renderer.v1.material.BlendMode;
 import net.fabricmc.fabric.api.renderer.v1.material.RenderMaterial;
@@ -222,8 +223,10 @@ public class ItemRenderContext extends AbstractRenderContext {
     }
 
     private void bufferQuad(MutableQuadViewImpl quad, VertexConsumer vertexConsumer) {
-        QuadEncoder.writeQuadVertices(quad, vertexConsumer, this.overlay, this.matPosition, this.trustedNormals, this.matNormal);
         var sprite = quad.sprite(SpriteFinderCache.forBlockAtlas());
+        var textureCoordinates = ItemTextureCoordinates.forQuad(quad, sprite);
+        QuadEncoder.writeQuadVertices(quad, vertexConsumer, this.overlay, this.matPosition, this.trustedNormals,
+                this.matNormal, textureCoordinates);
         if (sprite != null) {
             SpriteUtil.INSTANCE.markSpriteActive(sprite);
         }

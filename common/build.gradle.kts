@@ -147,3 +147,29 @@ exportSourceSet("commonDesktop", sourceSets["desktop"])
 
 tasks.jar { enabled = false }
 tasks.remapJar { enabled = false }
+
+// Regression tests exercise emitted vertices without starting a Minecraft client.
+sourceSets.named("test") {
+    compileClasspath += sourceSets["api"].output
+    compileClasspath += sourceSets["main"].compileClasspath
+    runtimeClasspath += sourceSets["api"].output
+    runtimeClasspath += sourceSets["main"].compileClasspath
+}
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.mockito:mockito-core:5.15.2")
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch")
+    val nativePlatform = if (os.contains("win")) "windows" else if (os.contains("mac")) "macos" else "linux"
+    val nativeArch = if (arch == "aarch64") "-arm64" else ""
+    testRuntimeOnly("org.lwjgl:lwjgl:3.3.3:natives-$nativePlatform$nativeArch")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    workingDir = layout.buildDirectory.dir("test-run").get().asFile
+    doFirst { workingDir.mkdirs() }
+}

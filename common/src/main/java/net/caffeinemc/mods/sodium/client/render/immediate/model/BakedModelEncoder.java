@@ -25,6 +25,8 @@ public class BakedModelEncoder {
     private static final boolean MULTIPLY_ALPHA = PlatformRuntimeInformation.getInstance().usesAlphaMultiplication();
 
     public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, int color, int light, int overlay, boolean colorize) {
+        var textureCoordinates = ItemRenderState.isActive()
+                ? ItemTextureCoordinates.forQuad(quad, quad.getSprite()) : ItemTextureCoordinates.UNCHANGED;
         Matrix3f matNormal = matrices.normal();
         Matrix4f matPosition = matrices.pose();
 
@@ -54,7 +56,8 @@ public class BakedModelEncoder {
                 float yt = MatrixHelper.transformPositionY(matPosition, x, y, z);
                 float zt = MatrixHelper.transformPositionZ(matPosition, x, y, z);
 
-                EntityVertex.write(ptr, xt, yt, zt, newColor, quad.getTexU(i), quad.getTexV(i), overlay, newLight, normal);
+                EntityVertex.write(ptr, xt, yt, zt, newColor,
+                        textureCoordinates.u(quad.getTexU(i)), textureCoordinates.v(quad.getTexV(i)), overlay, newLight, normal);
                 ptr += EntityVertex.STRIDE;
             }
 
@@ -63,6 +66,8 @@ public class BakedModelEncoder {
     }
 
     public static void writeQuadVertices(VertexBufferWriter writer, PoseStack.Pose matrices, ModelQuadView quad, float r, float g, float b, float a, float[] brightnessTable, boolean colorize, int[] light, int overlay) {
+        var textureCoordinates = ItemRenderState.isActive()
+                ? ItemTextureCoordinates.forQuad(quad, quad.getSprite()) : ItemTextureCoordinates.UNCHANGED;
         Matrix3f matNormal = matrices.normal();
         Matrix4f matPosition = matrices.pose();
 
@@ -116,7 +121,8 @@ public class BakedModelEncoder {
 
                 int color = ColorABGR.pack(fR, fG, fB, fA);
 
-                EntityVertex.write(ptr, xt, yt, zt, color, quad.getTexU(i), quad.getTexV(i), overlay, light[i], normal);
+                EntityVertex.write(ptr, xt, yt, zt, color,
+                        textureCoordinates.u(quad.getTexU(i)), textureCoordinates.v(quad.getTexV(i)), overlay, light[i], normal);
                 ptr += EntityVertex.STRIDE;
             }
 
